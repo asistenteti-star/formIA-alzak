@@ -1,8 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ClaudeLogo from "./_components/ClaudeLogo";
+
+// Genera un UUID que sirve de submission_id (idempotencia server-side).
+const newSubmissionId = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `sub-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 const DEPARTMENTS = ["Investigación", "Salud Pública", "IT", "Administración"];
 
@@ -77,6 +83,13 @@ export default function HomePage() {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState("idle");
 
+  // submissionId: un UUID por sesión de formulario. Se renueva al resetear.
+  // Combinado con UNIQUE en DB hace que cualquier reintento sea idempotente.
+  const submissionIdRef = useRef(newSubmissionId());
+
+  // Guard síncrono: bloquea doble clics rápidos antes de que setState aplique.
+  const submittingRef = useRef(false);
+
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
@@ -120,13 +133,18 @@ export default function HomePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Guard síncrono: bloquea cualquier clic adicional incluso antes de que
+    // el render con disabled=true llegue al DOM.
+    if (submittingRef.current) return;
+
     if (!validate()) {
-      // Scroll al primer error
       const firstError = document.querySelector("[data-has-error='true']");
       if (firstError) firstError.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
+    submittingRef.current = true;
     setStatus("submitting");
     try {
       const res = await fetch("/api/submit", {
@@ -136,6 +154,7 @@ export default function HomePage() {
           ...form,
           ahorroHoras: Number(form.ahorroHoras),
           nps: Number(form.nps),
+          submissionId: submissionIdRef.current,
           enviadoEn: new Date().toISOString(),
         }),
       });
@@ -147,6 +166,7 @@ export default function HomePage() {
     } catch (err) {
       console.error(err);
       setStatus("error");
+      submittingRef.current = false;
     }
   };
 
@@ -154,6 +174,9 @@ export default function HomePage() {
     setForm(initialState);
     setErrors({});
     setStatus("idle");
+    // Nuevo UUID para que el siguiente envío se considere un registro nuevo
+    submissionIdRef.current = newSubmissionId();
+    submittingRef.current = false;
   };
 
   if (status === "success") return <SuccessScreen onReset={resetForm} />;
@@ -744,6 +767,20 @@ function Spinner() {
 }
 
 function SuccessScreen({ onReset }) {
+  const COUNTDOWN_SECONDS = 8;
+  const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      onReset();
+      return;
+    }
+    const id = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [secondsLeft, onReset]);
+
+  const progressPct = ((COUNTDOWN_SECONDS - secondsLeft) / COUNTDOWN_SECONDS) * 100;
+
   return (
     <main className="min-h-screen w-full flex items-center justify-center px-4 py-12">
       <div className="h-1.5 w-full bg-alzak-gradient absolute top-0 left-0" />
@@ -772,18 +809,49 @@ function SuccessScreen({ onReset }) {
             </svg>
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-alzak-primary mb-4 tracking-tight">
-            ¡Gracias por tu evaluación!
+            ¡Gracias por diligenciar el formulario!
           </h2>
           <p className="text-slate-500 leading-relaxed mb-8 max-w-md mx-auto">
             Tu respuesta ha sido registrada con éxito. La información que
             compartiste nos ayudará a tomar mejores decisiones sobre el uso de
-            Claude AI en la fundación.
+            Claude AI en ALZAK Foundation.
           </p>
+
+          {/* Countdown auto-reset */}
+          <div className="mb-6 rounded-2xl bg-alzak-bg border border-slate-100 p-4">
+            <p className="text-xs text-slate-500 mb-2">
+              El formulario se reiniciará automáticamente en{" "}
+              <span className="font-bold text-alzak-primary tabular-nums">
+                {secondsLeft}s
+              </span>{" "}
+              para un nuevo registro
+            </p>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full bg-alzak-accent transition-all duration-1000 ease-linear"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+
           <button
             onClick={onReset}
-            className="inline-flex items-center justify-center rounded-2xl border-2 border-alzak-primary px-6 py-3 text-sm font-semibold text-alzak-primary transition hover:bg-alzak-primary hover:text-white"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-alzak-gradient-accent px-6 py-3 text-sm font-semibold text-white shadow-glow transition hover:brightness-110"
           >
-            Enviar otra respuesta
+            Reiniciar ahora
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
           </button>
         </div>
         <p className="mt-6 text-center text-xs text-slate-400">

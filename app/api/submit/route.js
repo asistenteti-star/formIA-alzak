@@ -75,11 +75,18 @@ export async function POST(request) {
       datos_sensibles: data.datosSensibles,
       bloqueadores: data.bloqueadores?.trim() || null,
       sugerencias: data.sugerencias?.trim() || null,
+      submission_id: data.submissionId || null,
     };
 
     const { error } = await supabase.from("respuestas").insert(row);
 
     if (error) {
+      // 23505 = unique_violation (Postgres). Significa que este submission_id
+      // ya fue insertado → idempotente: respondemos OK sin duplicar.
+      if (error.code === "23505") {
+        console.info("[ALZAK] Submit idempotente ignorado:", row.submission_id);
+        return NextResponse.json({ ok: true, deduped: true });
+      }
       console.error("[ALZAK] Supabase error:", error);
       return NextResponse.json(
         { ok: false, error: "No se pudo registrar la respuesta." },
