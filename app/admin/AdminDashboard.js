@@ -238,49 +238,64 @@ function LiveStatus({ lastUpdated, refreshing, onRefresh }) {
 /* ─────────────────── Header ─────────────────── */
 
 function AdminHeader({ total, totalAll }) {
-  const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
-    window.location.href = "/";
-  };
-
   return (
-    <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div className="flex items-center gap-4">
-        <Image
-          src="/logos/alzak.webp"
-          alt="ALZAK Foundation"
-          width={140}
-          height={70}
-          priority
-          className="h-9 w-auto"
-        />
-        <span className="text-lg font-light text-slate-300">×</span>
-        <ClaudeLogo height={28} />
-        <div className="ml-3 hidden sm:block border-l border-slate-200 pl-4">
-          <div className="text-xs font-semibold uppercase tracking-wider text-alzak-accent">
-            Panel admin
+    <>
+      <ConfidentialBanner />
+      <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Image
+            src="/logos/alzak.webp"
+            alt="ALZAK Foundation"
+            width={140}
+            height={70}
+            priority
+            className="h-9 w-auto"
+          />
+          <span className="text-lg font-light text-slate-300">×</span>
+          <ClaudeLogo height={28} />
+          <div className="ml-3 hidden sm:block border-l border-slate-200 pl-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-alzak-accent">
+              Panel administrativo
+            </div>
+            <h1 className="text-lg font-bold text-alzak-primary">
+              Evaluación de Claude AI
+            </h1>
           </div>
-          <h1 className="text-lg font-bold text-alzak-primary">
-            Evaluación de Claude AI
-          </h1>
         </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-500">
+            <span className="font-semibold text-alzak-primary">{total}</span>
+            {total !== totalAll && <span> de {totalAll}</span>} respuestas
+          </span>
+        </div>
+      </header>
+    </>
+  );
+}
+
+function ConfidentialBanner() {
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-2xl border-2 border-alzak-accent/30 bg-alzak-accent-tint px-4 py-3">
+      <svg
+        className="h-5 w-5 flex-shrink-0 text-alzak-accent-dark mt-0.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+        />
+      </svg>
+      <div className="text-xs leading-relaxed text-alzak-accent-dark">
+        <strong className="text-alzak-primary">Confidencial · Uso interno.</strong>{" "}
+        Esta vista contiene respuestas individuales con datos personales (nombres,
+        emails, comentarios). No comparta este enlace fuera del equipo de gerencia
+        de ALZAK Foundation.
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-slate-500">
-          <span className="font-semibold text-alzak-primary">{total}</span>
-          {total !== totalAll && <span> de {totalAll}</span>} respuestas
-        </span>
-        <button
-          onClick={handleLogout}
-          className="inline-flex items-center gap-1.5 rounded-xl border-2 border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-alzak-primary hover:text-alzak-primary"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          Cerrar sesión
-        </button>
-      </div>
-    </header>
+    </div>
   );
 }
 
@@ -675,7 +690,7 @@ function ResponsesTable({ rows }) {
         <table className="w-full text-sm">
           <thead className="bg-alzak-bg text-left">
             <tr className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              <Th>Fecha</Th>
+              <Th>Fecha respuesta</Th>
               <Th>Nombre</Th>
               <Th>Email</Th>
               <Th>Cargo</Th>
@@ -807,7 +822,7 @@ function ExportPreviewModal({ rows, onClose }) {
       const Papa = (await import("papaparse")).default;
       const csv = Papa.unparse(
         rows.map((r) => ({
-          Fecha: formatDate(r.enviado_en),
+          "Fecha respuesta": formatDate(r.enviado_en),
           Nombre: r.nombre,
           Email: r.email,
           Cargo: r.cargo,
@@ -917,7 +932,7 @@ function ExportPreviewModal({ rows, onClose }) {
         startY: kpiY + 70,
         head: [
           [
-            "Fecha",
+            "Fecha respuesta",
             "Nombre",
             "Email",
             "Cargo",
@@ -1056,7 +1071,7 @@ function ExportPreviewModal({ rows, onClose }) {
               <table className="w-full text-xs">
                 <thead className="bg-slate-50 text-left">
                   <tr className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                    <th className="px-3 py-2">Fecha</th>
+                    <th className="px-3 py-2">Fecha respuesta</th>
                     <th className="px-3 py-2">Nombre</th>
                     <th className="px-3 py-2">Depto</th>
                     <th className="px-3 py-2">Plan</th>
