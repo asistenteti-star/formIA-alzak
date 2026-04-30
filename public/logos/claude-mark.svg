@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <ellipse id="claude-ray" cx="0" cy="-30" rx="3.2" ry="22" fill="#D97757" />
+  </defs>
+  <g transform="translate(50,50)">
+    <use href="#claude-ray" />
+    <use href="#claude-ray" transform="rotate(32.727)" />
+    <use href="#claude-ray" transform="rotate(65.455)" />
+    <use href="#claude-ray" transform="rotate(98.182)" />
+    <use href="#claude-ray" transform="rotate(130.909)" />
+    <use href="#claude-ray" transform="rotate(163.636)" />
+    <use href="#claude-ray" transform="rotate(196.364)" />
+    <use href="#claude-ray" transform="rotate(229.091)" />
+    <use href="#claude-ray" transform="rotate(261.818)" />
+    <use href="#claude-ray" transform="rotate(294.545)" />
+    <use href="#claude-ray" transform="rotate(327.273)" />
+  </g>
+</svg>
